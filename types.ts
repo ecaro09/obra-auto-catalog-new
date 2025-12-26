@@ -42,12 +42,17 @@ export enum ProductCategory {
   ExecutiveTable = 'Executive Table',
   OfficeTable = 'Office Table',
   ConferenceTable = 'Conference Table',
+  Workstation = 'Workstation',
   ReceptionDesk = 'Reception Desk',
   FilingCabinet = 'Filing Cabinet',
   MobilePedestal = 'Mobile Pedestal',
   OfficeChair = 'Office Chair',
   GangChair = 'Gang Chair',
   Sofa = 'Sofa',
+  Locker = 'Locker',
+  StorageRack = 'Storage Rack',
   HomeFurniture = 'Home Furniture',
+  DiningFurniture = 'Dining Furniture',
+  OutdoorFurniture = 'Outdoor Furniture',
   Other = 'Other'
 }
