@@ -1,8 +1,29 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Quotation } from '../types';
+import { Quotation, Product } from '../types';
 
-export const generateQuotationPDF = (quotation: Quotation) => {
+/**
+ * Utility to convert image URL to Base64 for PDF inclusion
+ */
+const getBase64FromUrl = async (url: string): Promise<string> => {
+  try {
+    const data = await fetch(url);
+    const blob = await data.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        resolve(base64data);
+      };
+    });
+  } catch (e) {
+    console.error("Failed to load image for PDF", e);
+    return "";
+  }
+};
+
+export const generateQuotationPDF = async (quotation: Quotation) => {
   const doc = new jsPDF();
 
   // --- Header ---
@@ -35,12 +56,18 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   doc.text(quotation.customer.address, 14, 66);
   doc.text(quotation.customer.phone, 14, 71);
 
-  // --- Table ---
-  const tableColumn = ["Item", "Description", "Qty", "Unit Price", "Total"];
+  // --- Table with Images ---
+  const tableColumn = ["", "Item", "Description", "Qty", "Unit Price", "Total"];
   const tableRows: any[] = [];
 
-  quotation.items.forEach(item => {
+  // Pre-fetch images
+  const itemImages = await Promise.all(
+    quotation.items.map(item => item.images[0] ? getBase64FromUrl(item.images[0]) : Promise.resolve(""))
+  );
+
+  quotation.items.forEach((item, index) => {
     const itemData = [
+      "", // Image placeholder
       item.code,
       item.name,
       item.quantity,
@@ -56,11 +83,18 @@ export const generateQuotationPDF = (quotation: Quotation) => {
     head: [tableColumn],
     body: tableRows,
     theme: 'striped',
-    headStyles: { fillColor: [66, 66, 66] },
+    headStyles: { fillColor: [26, 26, 26] },
     columnStyles: {
-        3: { halign: 'right' },
-        4: { halign: 'right' }
-    }
+        0: { cellWidth: 20 },
+        4: { halign: 'right' },
+        5: { halign: 'right' }
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index === 0 && itemImages[data.row.index]) {
+        doc.addImage(itemImages[data.row.index], 'JPEG', data.cell.x + 2, data.cell.y + 2, 16, 16);
+      }
+    },
+    minCellHeight: 20
   });
 
   // --- Totals ---
@@ -100,4 +134,68 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   doc.text('3. Goods remain property of OBRA until paid in full.', 14, finalY + 51);
 
   doc.save(`Quotation_${quotation.number}.pdf`);
+};
+
+export const generateCatalogPDF = async (products: Product[]) => {
+  const doc = new jsPDF();
+  
+  // Title Page
+  doc.setFillColor(26, 26, 26);
+  doc.rect(0, 0, 210, 297, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(40);
+  doc.text('OBRA', 105, 120, { align: 'center' });
+  doc.setFontSize(16);
+  doc.text('OFFICE FURNITURE SOLUTIONS', 105, 135, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text(`Digital Catalog - ${new Date().getFullYear()}`, 105, 150, { align: 'center' });
+  
+  doc.addPage();
+  doc.setTextColor(40);
+  doc.setFontSize(22);
+  doc.text('Product Inventory', 14, 20);
+
+  const tableColumn = ["", "Details", "Category", "Investment"];
+  const tableRows: any[] = [];
+
+  // Group products by category
+  const categories = Array.from(new Set(products.map(p => p.category)));
+  
+  // Pre-fetch all images for active products
+  const activeProducts = products.filter(p => p.isActive);
+  const itemImages = await Promise.all(
+    activeProducts.map(p => p.images[0] ? getBase64FromUrl(p.images[0]) : Promise.resolve(""))
+  );
+
+  activeProducts.forEach((product, index) => {
+    tableRows.push([
+      "", // Image
+      `${product.name}\nCode: ${product.code}\n${product.dimensions || ''}`,
+      product.category,
+      `P ${product.sellingPrice.toLocaleString()}`
+    ]);
+  });
+
+  // @ts-ignore
+  autoTable(doc, {
+    startY: 30,
+    head: [tableColumn],
+    body: tableRows,
+    theme: 'grid',
+    headStyles: { fillColor: [194, 163, 115] }, // Accent color
+    columnStyles: {
+      0: { cellWidth: 30 },
+      1: { cellWidth: 80 },
+      3: { halign: 'right', fontStyle: 'bold' }
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index === 0 && itemImages[data.row.index]) {
+        doc.addImage(itemImages[data.row.index], 'JPEG', data.cell.x + 2, data.cell.y + 2, 26, 26);
+      }
+    },
+    minCellHeight: 30
+  });
+
+  doc.save('OBRA_Digital_Catalog.pdf');
 };
