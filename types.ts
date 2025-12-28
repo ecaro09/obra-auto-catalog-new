@@ -34,6 +34,7 @@ export interface Quotation {
   subtotal: number;
   deliveryFee: number;
   discount: number;
+  paymentMethod?: string;
   grandTotal: number;
   status: 'Draft' | 'Sent' | 'Approved' | 'Rejected';
 }

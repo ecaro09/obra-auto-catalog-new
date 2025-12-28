@@ -24,6 +24,7 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   doc.setFontSize(10);
   doc.text(`Ref No: ${quotation.number}`, 140, 28);
   doc.text(`Date: ${new Date(quotation.date).toLocaleDateString()}`, 140, 33);
+  doc.text(`Status: ${quotation.status.toUpperCase()}`, 140, 38);
 
   // --- Customer Details ---
   doc.setFontSize(12);
@@ -69,9 +70,12 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   doc.text('Subtotal:', 140, finalY);
   doc.text(`P ${quotation.subtotal.toLocaleString()}`, 190, finalY, { align: 'right' });
 
+  // Only show discount if greater than 0
   if (quotation.discount > 0) {
     doc.text(`Discount:`, 140, finalY + 6);
+    doc.setTextColor(220, 53, 69); // Red color for discount
     doc.text(`- P ${quotation.discount.toLocaleString()}`, 190, finalY + 6, { align: 'right' });
+    doc.setTextColor(0); // Reset color
   }
 
   doc.text(`Delivery Fee:`, 140, finalY + 12);
@@ -81,6 +85,12 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Grand Total:', 140, finalY + 20);
   doc.text(`P ${quotation.grandTotal.toLocaleString()}`, 190, finalY + 20, { align: 'right' });
+
+  if (quotation.paymentMethod) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Payment Method: ${quotation.paymentMethod}`, 140, finalY + 28);
+  }
 
   // --- Footer ---
   doc.setFont('helvetica', 'normal');

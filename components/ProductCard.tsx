@@ -14,19 +14,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, 
   const [hasError, setHasError] = useState(false);
 
   return (
-    <div className="group bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col h-full">
+    <div className="group bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col h-full transform-gpu">
       {/* Image Container with fixed aspect-ratio to eliminate layout shift (CLS) */}
       <div 
         className="relative aspect-square overflow-hidden bg-gray-50 cursor-pointer"
         onClick={() => onViewDetails(product)}
       >
-        {/* Professional Placeholder / Skeleton */}
+        {/* Blurred Placeholder / Skeleton Overlay */}
         <div 
-          className={`absolute inset-0 bg-gray-100 flex items-center justify-center transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-0' : 'opacity-100'}`}
+          className={`absolute inset-0 z-10 bg-gray-50 flex items-center justify-center transition-opacity duration-700 ease-out ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           aria-hidden="true"
         >
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center">
-            <ImageIcon className="text-gray-300" size={32} />
+          <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center">
+            <ImageIcon className="text-gray-200" size={32} />
           </div>
         </div>
         
@@ -43,17 +43,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, 
               setHasError(true);
               setIsLoaded(true);
             }}
-            className={`w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100' : 'opacity-0 scale-110'}`}
+            className={`w-full h-full object-cover object-center transition-all duration-700 ease-out will-change-transform ${
+              isLoaded 
+                ? 'opacity-100 blur-0 scale-100 group-hover:scale-105' 
+                : 'opacity-0 blur-lg scale-110'
+            }`}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 p-4">
+          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 p-4 absolute inset-0 z-20">
             <ImageIcon size={24} className="mb-2 opacity-50" />
             <span className="text-[10px] font-black uppercase tracking-tighter">Asset Unavailable</span>
           </div>
         )}
         
         {!product.isActive && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-30 pointer-events-none">
             <span className="px-5 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-2xl">
               Out of Stock
             </span>
@@ -61,9 +65,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, 
         )}
 
         {/* Dynamic UI Overlays */}
-        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-5 pointer-events-none">
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-5 pointer-events-none z-20">
            <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-             <span className="text-[10px] font-black text-primary uppercase tracking-widest">View Selection Details</span>
+             <span className="text-[10px] font-black text-primary uppercase tracking-widest">View Details</span>
            </div>
         </div>
       </div>
