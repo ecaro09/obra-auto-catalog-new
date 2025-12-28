@@ -70,12 +70,9 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   doc.text('Subtotal:', 140, finalY);
   doc.text(`P ${quotation.subtotal.toLocaleString()}`, 190, finalY, { align: 'right' });
 
-  // Only show discount if greater than 0
   if (quotation.discount > 0) {
     doc.text(`Discount:`, 140, finalY + 6);
-    doc.setTextColor(220, 53, 69); // Red color for discount
     doc.text(`- P ${quotation.discount.toLocaleString()}`, 190, finalY + 6, { align: 'right' });
-    doc.setTextColor(0); // Reset color
   }
 
   doc.text(`Delivery Fee:`, 140, finalY + 12);
