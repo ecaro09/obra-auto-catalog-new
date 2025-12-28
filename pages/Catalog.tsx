@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
 import { Product, ProductCategory } from '../types';
@@ -121,11 +122,6 @@ export const Catalog: React.FC = () => {
                   </span>
                 </button>
               ))}
-            </div>
-            
-            <div className="mt-12 p-6 bg-accent/5 rounded-2xl border border-accent/10">
-               <p className="text-[10px] font-black uppercase tracking-widest text-accent mb-2">Service Note</p>
-               <p className="text-[11px] text-accent/80 leading-relaxed font-medium">All prices include our standard 10% administrative service fee for fulfillment and quality assurance.</p>
             </div>
           </div>
         </aside>

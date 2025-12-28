@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Quotation, Product } from '../types';
@@ -136,7 +137,16 @@ export const generateQuotationPDF = async (quotation: Quotation) => {
   doc.save(`Quotation_${quotation.number}.pdf`);
 };
 
-export const generateCatalogPDF = async (products: Product[]) => {
+export interface CatalogExportOptions {
+  includeDescription?: boolean;
+  includeDimensions?: boolean;
+  includeOriginalPrice?: boolean;
+  includeSellingPrice?: boolean;
+  includeCategory?: boolean;
+  sortBy?: 'name' | 'category' | 'price-asc' | 'price-desc' | 'code';
+}
+
+export const generateCatalogPDF = async (products: Product[], options: CatalogExportOptions = {}) => {
   const doc = new jsPDF();
   
   // Title Page
@@ -156,25 +166,52 @@ export const generateCatalogPDF = async (products: Product[]) => {
   doc.setFontSize(22);
   doc.text('Product Inventory', 14, 20);
 
-  const tableColumn = ["", "Details", "Category", "Investment"];
-  const tableRows: any[] = [];
-
-  // Group products by category
-  const categories = Array.from(new Set(products.map(p => p.category)));
+  // Sorting logic
+  let sortedProducts = [...products.filter(p => p.isActive)];
+  const { sortBy = 'name' } = options;
   
-  // Pre-fetch all images for active products
-  const activeProducts = products.filter(p => p.isActive);
+  sortedProducts.sort((a, b) => {
+    switch (sortBy) {
+      case 'category': return a.category.localeCompare(b.category);
+      case 'price-asc': return a.sellingPrice - b.sellingPrice;
+      case 'price-desc': return b.sellingPrice - a.sellingPrice;
+      case 'code': return a.code.localeCompare(b.code);
+      default: return a.name.localeCompare(b.name);
+    }
+  });
+
+  // Dynamic Column Generation
+  const tableColumn = [""];
+  tableColumn.push("Product Details");
+  if (options.includeCategory !== false) tableColumn.push("Category");
+  if (options.includeOriginalPrice) tableColumn.push("Base Price");
+  if (options.includeSellingPrice !== false) tableColumn.push("Selling Price");
+
+  const tableRows: any[] = [];
+  
+  // Pre-fetch all images
   const itemImages = await Promise.all(
-    activeProducts.map(p => p.images[0] ? getBase64FromUrl(p.images[0]) : Promise.resolve(""))
+    sortedProducts.map(p => p.images[0] ? getBase64FromUrl(p.images[0]) : Promise.resolve(""))
   );
 
-  activeProducts.forEach((product, index) => {
-    tableRows.push([
-      "", // Image
-      `${product.name}\nCode: ${product.code}\n${product.dimensions || ''}`,
-      product.category,
-      `P ${product.sellingPrice.toLocaleString()}`
-    ]);
+  sortedProducts.forEach((product, index) => {
+    const row: any[] = [""]; // Image placeholder
+    
+    // Details Column
+    let details = `${product.name}\nCode: ${product.code}`;
+    if (options.includeDimensions !== false && product.dimensions) {
+      details += `\nDim: ${product.dimensions}`;
+    }
+    if (options.includeDescription && product.description) {
+      details += `\n${product.description}`;
+    }
+    row.push(details);
+
+    if (options.includeCategory !== false) row.push(product.category);
+    if (options.includeOriginalPrice) row.push(`P ${product.originalPrice.toLocaleString()}`);
+    if (options.includeSellingPrice !== false) row.push(`P ${product.sellingPrice.toLocaleString()}`);
+
+    tableRows.push(row);
   });
 
   // @ts-ignore
@@ -184,18 +221,18 @@ export const generateCatalogPDF = async (products: Product[]) => {
     body: tableRows,
     theme: 'grid',
     headStyles: { fillColor: [194, 163, 115] }, // Accent color
+    styles: { fontSize: 8 },
     columnStyles: {
-      0: { cellWidth: 30 },
-      1: { cellWidth: 80 },
-      3: { halign: 'right', fontStyle: 'bold' }
+      0: { cellWidth: 25 },
+      1: { cellWidth: 'auto' },
     },
     didDrawCell: (data) => {
       if (data.section === 'body' && data.column.index === 0 && itemImages[data.row.index]) {
-        doc.addImage(itemImages[data.row.index], 'JPEG', data.cell.x + 2, data.cell.y + 2, 26, 26);
+        doc.addImage(itemImages[data.row.index], 'JPEG', data.cell.x + 2, data.cell.y + 2, 21, 21);
       }
     },
-    minCellHeight: 30
+    minCellHeight: 25
   });
 
-  doc.save('OBRA_Digital_Catalog.pdf');
+  doc.save('OBRA_Custom_Catalog.pdf');
 };
